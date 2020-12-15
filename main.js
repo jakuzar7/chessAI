@@ -24,22 +24,26 @@ class Piece {
     }
     movePiece(targetCell) {
         // check if move is legit
-        let contains = false
+        let legitMove = false
         this.moves.forEach(move => {
             if (move[0] - targetCell[0] == 0 && move[1] - targetCell[1] == 0) {
-                contains = true
+                legitMove = true
             }
         })
 
-        if (contains) {
+        if (legitMove) {
 
-            let targetPiece = cellContent(targetCell)
+            let targetPieceIndex = cellContent(targetCell,true)
+            let targetPiece =  pieces[targetPieceIndex]
             if (targetPiece == null) {
                 console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
                 this.cell = targetCell
-            }//else{
-            // delete captured piece
-            //}
+            }else{
+                console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
+                console.log('and captured', targetPiece.type + targetPiece.color);
+                pieces.splice(targetPieceIndex,1)
+                this.cell = targetCell
+            }
 
             this.calculateNewPieceMoves()
         } else {
@@ -125,10 +129,14 @@ function spawnStartingPieces(playerWhite = true) {
 
 }
 // TODO return null when searched cell is out of board
-function cellContent(cell) {
+function cellContent(cell, onlyPieceIndex=false) {
     for (let i = 0; i < pieces.length; i++) {
         if (pieces[i].cell[0] - cell[0] == 0 && pieces[i].cell[1] - cell[1] == 0) {
-            return pieces[i]
+            if (!onlyPieceIndex) {
+                return pieces[i]
+            }else{
+                return i
+            }
         }
     }
     return null
@@ -245,6 +253,11 @@ function handlePieceClick() {
         console.log('target cell', [parseInt(this.id / 8), this.id % 8]);
         selectedPiece.movePiece([parseInt(this.id / 8), this.id % 8])
         selectedPiece = null
+        
+        // calculate new moves for every piece
+        pieces.forEach(piece => {
+            piece.calculateNewPieceMoves()
+        });
     }
     renderPieces()
 }
@@ -266,17 +279,18 @@ for (let i = 0; i < 64; i++) {
         if (i % 2 == 1) {
             docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'purple'
         } else {
-            docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'lightblue'
+            docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'RGB(92,191,220)' 
         }
     } else if (i % 2 == 0) {
         docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'purple'
     } else {
-        docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'lightblue'
+        docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'RGB(92,191,220)'
     }
 }
 
 spawnStartingPieces()
 
+// calculate new moves for every piece
 pieces.forEach(piece => {
     piece.calculateNewPieceMoves()
 });
