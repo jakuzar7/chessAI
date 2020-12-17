@@ -33,15 +33,15 @@ class Piece {
 
         if (legitMove) {
 
-            let targetPieceIndex = cellContent(targetCell,true)
-            let targetPiece =  pieces[targetPieceIndex]
+            let targetPieceIndex = cellContent(targetCell, true)
+            let targetPiece = pieces[targetPieceIndex]
             if (targetPiece == null) {
                 console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
                 this.cell = targetCell
-            }else{
+            } else {
                 console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
                 console.log('and captured', targetPiece.type + targetPiece.color);
-                pieces.splice(targetPieceIndex,1)
+                pieces.splice(targetPieceIndex, 1)
                 this.cell = targetCell
             }
 
@@ -129,12 +129,12 @@ function spawnStartingPieces(playerWhite = true) {
 
 }
 // TODO return null when searched cell is out of board
-function cellContent(cell, onlyPieceIndex=false) {
+function cellContent(cell, onlyPieceIndex = false) {
     for (let i = 0; i < pieces.length; i++) {
         if (pieces[i].cell[0] - cell[0] == 0 && pieces[i].cell[1] - cell[1] == 0) {
             if (!onlyPieceIndex) {
                 return pieces[i]
-            }else{
+            } else {
                 return i
             }
         }
@@ -200,6 +200,240 @@ function pieceMoves(piece) {
         }
 
     }
+    if (piece.type == 'R') {
+        // check right
+        for (let i = position[0] + 1; i < 8; i++) {
+            targetPiece = cellContent([i, position[1]])
+            if (targetPiece == null) {
+                moveOptions.push([i, position[1]])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([i, position[1]])
+                break
+            } else {
+                break
+            }
+        }
+        // check down
+        for (let i = position[1] + 1; i < 8; i++) {
+            targetPiece = cellContent([position[0], i])
+            if (targetPiece == null) {
+                moveOptions.push([position[0], i])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([position[0], i])
+                break
+            } else {
+                break
+            }
+        }
+
+        // check left
+        for (let i = position[0] - 1; i > -1; i--) {
+            targetPiece = cellContent([i, position[1]])
+            if (targetPiece == null) {
+                moveOptions.push([i, position[1]])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([i, position[1]])
+                break
+            } else {
+                break
+            }
+        }
+        // check up
+        for (let i = position[1] - 1; i > -1; i--) {
+            targetPiece = cellContent([position[0], i])
+            if (targetPiece == null) {
+                moveOptions.push([position[0], i])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([position[0], i])
+                break
+            } else {
+                break
+            }
+        }
+    }
+    if (piece.type == 'B') {
+
+        // down right
+        for (x = position[0] + 1, y = position[1] + 1; x < 8 && y < 8; x++, y++) {
+            targetPiece = cellContent([x, y])
+            if (targetPiece == null) {
+                moveOptions.push([x, y])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([x, y])
+                break
+            } else {
+                break
+            }
+
+        }
+
+        // up left
+        for (x = position[0] - 1, y = position[1] - 1; x > -1 && y > -1; x--, y--) {
+            targetPiece = cellContent([x, y])
+            if (targetPiece == null) {
+                moveOptions.push([x, y])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([x, y])
+                break
+            } else {
+                break
+            }
+
+        }
+
+        // up right
+        for (x = position[0] - 1, y = position[1] + 1; x > -1 && y < 8; x--, y++) {
+            targetPiece = cellContent([x, y])
+            if (targetPiece == null) {
+                moveOptions.push([x, y])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([x, y])
+                break
+            } else {
+                break
+            }
+
+        }
+
+        // down left
+        for (x = position[0] + 1, y = position[1] - 1; x < 8 && y > -1; x++, y--) {
+            targetPiece = cellContent([x, y])
+            if (targetPiece == null) {
+                moveOptions.push([x, y])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([x, y])
+                break
+            } else {
+                break
+            }
+
+        }
+    }
+    if (piece.type == 'N') {
+        knightMoves = [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]]
+        let targetPos
+        knightMoves.forEach(move => {
+            targetPos = [position[0] + move[0], position[1] + move[1]]
+            targetPiece = cellContent(targetPos)
+            if (targetPiece == null) {
+                moveOptions.push(targetPos)
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push(targetPos)
+            }
+        });
+    }
+    if (piece.type == 'Q') {
+
+        // right
+        for (let i = position[0] + 1; i < 8; i++) {
+            targetPiece = cellContent([i, position[1]])
+            if (targetPiece == null) {
+                moveOptions.push([i, position[1]])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([i, position[1]])
+                break
+            } else {
+                break
+            }
+        }
+        // down
+        for (let i = position[1] + 1; i < 8; i++) {
+            targetPiece = cellContent([position[0], i])
+            if (targetPiece == null) {
+                moveOptions.push([position[0], i])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([position[0], i])
+                break
+            } else {
+                break
+            }
+        }
+
+        // left
+        for (let i = position[0] - 1; i > -1; i--) {
+            targetPiece = cellContent([i, position[1]])
+            if (targetPiece == null) {
+                moveOptions.push([i, position[1]])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([i, position[1]])
+                break
+            } else {
+                break
+            }
+        }
+        // up
+        for (let i = position[1] - 1; i > -1; i--) {
+            targetPiece = cellContent([position[0], i])
+            if (targetPiece == null) {
+                moveOptions.push([position[0], i])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([position[0], i])
+                break
+            } else {
+                break
+            }
+        }
+
+        // down right
+        for (x = position[0] + 1, y = position[1] + 1; x < 8 && y < 8; x++, y++) {
+            targetPiece = cellContent([x, y])
+            if (targetPiece == null) {
+                moveOptions.push([x, y])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([x, y])
+                break
+            } else {
+                break
+            }
+
+        }
+        // up left
+        for (x = position[0] - 1, y = position[1] - 1; x > -1 && y > -1; x--, y--) {
+            targetPiece = cellContent([x, y])
+            if (targetPiece == null) {
+                moveOptions.push([x, y])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([x, y])
+                break
+            } else {
+                break
+            }
+
+        }
+
+        // up right
+        for (x = position[0] - 1, y = position[1] + 1; x > -1 && y < 8; x--, y++) {
+            targetPiece = cellContent([x, y])
+            if (targetPiece == null) {
+                moveOptions.push([x, y])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([x, y])
+                break
+            } else {
+                break
+            }
+
+        }
+
+        // down left
+        for (x = position[0] + 1, y = position[1] - 1; x < 8 && y > -1; x++, y--) {
+            targetPiece = cellContent([x, y])
+            if (targetPiece == null) {
+                moveOptions.push([x, y])
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push([x, y])
+                break
+            } else {
+                break
+            }
+
+        }
+    }
+    if (piece.type == 'K') {
+        
+    }
+
+    // check if move is not the piece or king position
     return moveOptions
 }
 // console log all moves
@@ -214,13 +448,13 @@ function logAllPieceMoves(piece) {
 }
 // render all pieces on chessboard
 function renderPieces() {
-    let tempPiece = null  
+    let tempPiece = null
     for (let i = 0; i < 64; i++) {
         tempPiece = cellContent([parseInt(i / 8), i % 8])
         if (tempPiece == null) {
             docChessBoardCells[parseInt(i / 8)][i % 8].innerHTML = ''
             continue
-        }else{
+        } else {
             docChessBoardCells[parseInt(i / 8)][i % 8].innerHTML = tempPiece.type
             if (tempPiece.color == 'w') {
                 docChessBoardCells[tempPiece.cell[0]][tempPiece.cell[1]].style.color = 'white'
@@ -228,7 +462,7 @@ function renderPieces() {
                 docChessBoardCells[tempPiece.cell[0]][tempPiece.cell[1]].style.color = 'black'
             }
         }
-        
+
     }
     /* rendering only pieces
     pieces.forEach(piece => {
@@ -253,7 +487,7 @@ function handlePieceClick() {
         console.log('target cell', [parseInt(this.id / 8), this.id % 8]);
         selectedPiece.movePiece([parseInt(this.id / 8), this.id % 8])
         selectedPiece = null
-        
+
         // calculate new moves for every piece
         pieces.forEach(piece => {
             piece.calculateNewPieceMoves()
@@ -279,7 +513,7 @@ for (let i = 0; i < 64; i++) {
         if (i % 2 == 1) {
             docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'purple'
         } else {
-            docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'RGB(92,191,220)' 
+            docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'RGB(92,191,220)'
         }
     } else if (i % 2 == 0) {
         docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'purple'
@@ -313,4 +547,4 @@ for (let i = 0; i < 8; i++) {
 
 //console.log(logAllPieceMoves(pieces[30]));
 
-console.log('end'); 
+console.log('init finished'); 
