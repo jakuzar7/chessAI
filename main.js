@@ -3,6 +3,7 @@ chessBoardTable = document.getElementById("chessBoardTable")
 let docChessBoardCells = []
 var pieces = []
 var selectedPiece = null
+var playerTurn, whiteKing, blackKing
 
 class Piece {
     constructor(type, color, cell) {
@@ -32,7 +33,7 @@ class Piece {
         })
 
         if (legitMove) {
-
+            let tempCell = this.cell, tempPiece, captured = false
             let targetPieceIndex = cellContent(targetCell, true)
             let targetPiece = pieces[targetPieceIndex]
             if (targetPiece == null) {
@@ -42,10 +43,24 @@ class Piece {
                 console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
                 console.log('and captured', targetPiece.type + targetPiece.color);
                 pieces.splice(targetPieceIndex, 1)
+                tempPiece = pieces[targetPieceIndex]
+                captured = true
                 this.cell = targetCell
             }
+            // reseting pieces to previous state if error move
+            if (kingExposed()) {
+                this.cell = tempCell
+                if (captured) {
+                    pieces.push(tempPiece)
+                }
+                // else next turn
+            } else if (playerTurn == 'b') {
+                playerTurn = 'w'
+            } else {
+                playerTurn = 'b'
+            }
 
-            this.calculateNewPieceMoves()
+            //this.calculateNewPieceMoves()
         } else {
 
             console.log('error: illegal move')
@@ -55,6 +70,40 @@ class Piece {
     calculateNewPieceMoves() {
         this.moves = pieceMoves(this)
     }
+}
+
+function kingExposed() {
+    let king
+    if (playerTurn == 'b') {
+        king = blackKing
+    } else {
+        king = whiteKing
+    }
+
+    for (let j = 0; j < pieces.length; j++) {
+        pieces[j].calculateNewPieceMoves()
+        for (let i = 0; i < pieces[j].moves.length; i++) {
+            if (pieces[j].moves[i][0] - king.cell[0] == 0 && pieces[j].moves[i][1] - king.cell[1] == 0) {
+                console.log('king exposed!', pieces[j], pieces[j].moves[i])
+                return true
+            }
+
+        }
+
+    }
+    return false
+    /*
+        pieces.forEach(piece => {
+            piece.calculateNewPieceMoves()
+            piece.moves.forEach(moveCell => {
+                if (moveCell[0] - king.cell[0] == 0 && moveCell[1] - king.cell[1] == 0) {
+                    console.log('king exposed!', piece, moveCell)
+                    return true
+                }
+            });
+        });
+        return false
+        */
 }
 
 // 0 -> A8 ; 63 -> H1 ; 
@@ -89,11 +138,13 @@ function spawnStartingPieces(playerWhite = true) {
         playerColor = 'b'
         AIColor = 'w'
     }
+    playerTurn = 'w'
     pieces.push(new Piece('R', playerColor, [7, 0]))
     pieces.push(new Piece('N', playerColor, [7, 1]))
     pieces.push(new Piece('B', playerColor, [7, 2]))
     pieces.push(new Piece('Q', playerColor, [7, 3]))
     pieces.push(new Piece('K', playerColor, [7, 4]))
+    whiteKing = pieces[4]
     pieces.push(new Piece('B', playerColor, [7, 5]))
     pieces.push(new Piece('N', playerColor, [7, 6]))
     pieces.push(new Piece('R', playerColor, [7, 7]))
@@ -113,6 +164,7 @@ function spawnStartingPieces(playerWhite = true) {
     pieces.push(new Piece('B', AIColor, [0, 2]))
     pieces.push(new Piece('Q', AIColor, [0, 3]))
     pieces.push(new Piece('K', AIColor, [0, 4]))
+    blackKing = pieces[20]
     pieces.push(new Piece('B', AIColor, [0, 5]))
     pieces.push(new Piece('N', AIColor, [0, 6]))
     pieces.push(new Piece('R', AIColor, [0, 7]))
@@ -310,7 +362,7 @@ function pieceMoves(piece) {
         }
     }
     if (piece.type == 'N') {
-        knightMoves = [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]]
+        let knightMoves = [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]]
         let targetPos
         knightMoves.forEach(move => {
             targetPos = [position[0] + move[0], position[1] + move[1]]
@@ -430,7 +482,17 @@ function pieceMoves(piece) {
         }
     }
     if (piece.type == 'K') {
-        
+        let kingMoves = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+        let targetPos
+        kingMoves.forEach(move => {
+            targetPos = [position[0] + move[0], position[1] + move[1]]
+            targetPiece = cellContent(targetPos)
+            if (targetPiece == null) {
+                moveOptions.push(targetPos)
+            } else if (targetPiece.color != piece.color) {
+                moveOptions.push(targetPos)
+            }
+        });
     }
 
     // check if move is not the piece or king position
@@ -483,7 +545,7 @@ function handlePieceClick() {
             selectedPiece = piece
             // highlight the possible moves
         }
-    } else if (selectedPiece != null) {
+    } else if (selectedPiece != null && selectedPiece.color == playerTurn) {
         console.log('target cell', [parseInt(this.id / 8), this.id % 8]);
         selectedPiece.movePiece([parseInt(this.id / 8), this.id % 8])
         selectedPiece = null
@@ -492,6 +554,8 @@ function handlePieceClick() {
         pieces.forEach(piece => {
             piece.calculateNewPieceMoves()
         });
+    } else {
+        selectedPiece = null
     }
     renderPieces()
 }
