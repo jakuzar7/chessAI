@@ -1,9 +1,10 @@
-chessBoardTable = document.getElementById("chessBoardTable")
-
+let chessBoardTable = document.getElementById("chessBoardTable")
 let docChessBoardCells = []
 var pieces = []
 var selectedPiece = null
 var playerTurn, whiteKing, blackKing
+// dark purple, dark blue, light purple, light blue
+var chessBoardColors = ['rgb(128, 0, 128)', 'rgb(32, 131, 160)', 'rgb(198, 70, 198)', 'rgb(92, 191, 220)']
 
 class Piece {
     constructor(type, color, cell) {
@@ -23,48 +24,84 @@ class Piece {
         }
         return count
     }
-    movePiece(targetCell) {
+    // moves the piece, returning true if moved succesful, otherwise false
+    movePiece(targetCell, simulation = false) {
         // check if move is legit
         let legitMove = false
-        this.moves.forEach(move => {
-            if (move[0] - targetCell[0] == 0 && move[1] - targetCell[1] == 0) {
-                legitMove = true
-            }
-        })
+        if (!simulation) {
+            this.moves.forEach(move => {
+                if (move[0] - targetCell[0] == 0 && move[1] - targetCell[1] == 0) {
+                    legitMove = true
+                }
+            })
+        } else {
+            legitMove = true
+        }
 
         if (legitMove) {
             let tempCell = this.cell, tempPiece, captured = false
             let targetPieceIndex = cellContent(targetCell, true)
             let targetPiece = pieces[targetPieceIndex]
+            // targeting empty cell
             if (targetPiece == null) {
-                console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
+                if (!simulation) {
+                    console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
+                }
                 this.cell = targetCell
             } else {
-                console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
-                console.log('and captured', targetPiece.type + targetPiece.color);
+                //targeting enemy piece
+                if (!simulation) {
+                    console.log('moved', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
+                    console.log('and captured', targetPiece.type + targetPiece.color);
+                }
+                tempPiece = new Piece(targetPiece.type, targetPiece.color, targetPiece.cell)
+                tempPiece.id = targetPiece.id
+                tempPiece.moves = new Array(targetPiece.moves)[0]
                 pieces.splice(targetPieceIndex, 1)
-                tempPiece = pieces[targetPieceIndex]
                 captured = true
                 this.cell = targetCell
             }
-            // reseting pieces to previous state if error move
+            // reseting pieces to previous state if invalid move
             if (kingExposed()) {
+                // delete invalid move from this.moves
+                for (let i = 0; i < this.moves.length; i++) {
+                    if (this.moves[i][0] - targetCell[0] == 0 && this.moves[i][1] - targetCell[1] == 0) {
+                        this.moves.splice(i, 1)
+                        break
+                    }
+                }
+                // returning to original position
                 this.cell = tempCell
                 if (captured) {
+                    // reviving captured piece
                     pieces.push(tempPiece)
                 }
-                // else next turn
+                return false
+
+            } else if (simulation) {
+                // returning to original position
+                this.cell = tempCell
+                if (captured) {
+                    // reviving captured piece
+                    pieces.push(tempPiece)
+                }
+                // return true for the simulation
+                return true
+
             } else if (playerTurn == 'b') {
+                // else next turn
                 playerTurn = 'w'
             } else {
                 playerTurn = 'b'
             }
-
-            //this.calculateNewPieceMoves()
+            return true
         } else {
-
-            console.log('error: illegal move')
-            console.log('tried to move', this.type + this.color, 'from', convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
+            if (!simulation) {
+                console.log('error: illegal move')
+                console.log('tried to move', this.type + this.color, 'from',
+                    convertChessNotation(this.cell), 'to', convertChessNotation(targetCell));
+            }
+            return false
         }
     }
     calculateNewPieceMoves() {
@@ -72,6 +109,7 @@ class Piece {
     }
 }
 
+// checking if move doesn't kill the king
 function kingExposed() {
     let king
     if (playerTurn == 'b') {
@@ -92,20 +130,7 @@ function kingExposed() {
 
     }
     return false
-    /*
-        pieces.forEach(piece => {
-            piece.calculateNewPieceMoves()
-            piece.moves.forEach(moveCell => {
-                if (moveCell[0] - king.cell[0] == 0 && moveCell[1] - king.cell[1] == 0) {
-                    console.log('king exposed!', piece, moveCell)
-                    return true
-                }
-            });
-        });
-        return false
-        */
 }
-
 // 0 -> A8 ; 63 -> H1 ; 
 function convertChessNotation(index) {
     let letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -180,7 +205,7 @@ function spawnStartingPieces(playerWhite = true) {
 
 
 }
-// TODO return null when searched cell is out of board
+// returns cell content 
 function cellContent(cell, onlyPieceIndex = false) {
     for (let i = 0; i < pieces.length; i++) {
         if (pieces[i].cell[0] - cell[0] == 0 && pieces[i].cell[1] - cell[1] == 0) {
@@ -193,7 +218,7 @@ function cellContent(cell, onlyPieceIndex = false) {
     }
     return null
 }
-// calculating piece moves
+// calculating possible piece moves (without king check)
 function pieceMoves(piece) {
     let moveOptions = []
     let position = piece.cell
@@ -495,12 +520,21 @@ function pieceMoves(piece) {
         });
     }
 
-    // check if move is not the piece or king position
+    // delete moves not on the board
+    for (let i = 0; i < moveOptions.length; i++) {
+        if (moveOptions[i][0] > 7 || moveOptions[i][0] < 0 || moveOptions[i][1] > 7 || moveOptions[i][1] < 0) {
+            moveOptions.splice(i, 1)
+            i--
+        }
+
+
+    }
+
     return moveOptions
 }
 // console log all moves
 function logAllPieceMoves(piece) {
-    let moves = pieceMoves(piece)
+    let moves = piece.moves
     let result = []
     for (let i = 0; i < moves.length; i++) {
         result.push(convertChessNotation(moves[i]))
@@ -508,7 +542,7 @@ function logAllPieceMoves(piece) {
     }
     return result
 }
-// render all pieces on chessboard
+// render all pieces/changes on the chessboard
 function renderPieces() {
     let tempPiece = null
     for (let i = 0; i < 64; i++) {
@@ -537,27 +571,107 @@ function renderPieces() {
     });
     */
 }
-
+// coloring the chessBoard
+function baseColorChessboard() {
+    for (let i = 0; i < 64; i++) {
+        if (parseInt(i / 8) % 2 == 0) {
+            if (i % 2 == 1) {
+                docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = chessBoardColors[0]
+            } else {
+                docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = chessBoardColors[1]
+            }
+        } else if (i % 2 == 0) {
+            docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = chessBoardColors[0]
+        } else {
+            docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = chessBoardColors[1]
+        }
+    }
+}
+// highlight given cells
+function highlightCells(cells) {
+    cells.forEach(cell => {
+        if (docChessBoardCells[cell[0]][cell[1]].style.backgroundColor == chessBoardColors[0]) {
+            docChessBoardCells[cell[0]][cell[1]].style.backgroundColor = chessBoardColors[2]
+        } else if (docChessBoardCells[cell[0]][cell[1]].style.backgroundColor == chessBoardColors[1]) {
+            docChessBoardCells[cell[0]][cell[1]].style.backgroundColor = chessBoardColors[3]
+        }
+    });
+}
+// handling click event
 function handlePieceClick() {
     if (selectedPiece == null) {
         let piece = cellContent([parseInt(this.id / 8), this.id % 8])
         if (piece != null) {
             selectedPiece = piece
+            highlightCells(selectedPiece.moves)
             // highlight the possible moves
         }
     } else if (selectedPiece != null && selectedPiece.color == playerTurn) {
-        console.log('target cell', [parseInt(this.id / 8), this.id % 8]);
-        selectedPiece.movePiece([parseInt(this.id / 8), this.id % 8])
-        selectedPiece = null
+        //console.log('target cell', [parseInt(this.id / 8), this.id % 8]);
+        succesfulMove = selectedPiece.movePiece([parseInt(this.id / 8), this.id % 8])
 
-        // calculate new moves for every piece
-        pieces.forEach(piece => {
-            piece.calculateNewPieceMoves()
-        });
+        // calculate new moves for every piece after succesful move
+        if (succesfulMove) {
+            pieces.forEach(piece => {
+                piece.calculateNewPieceMoves()
+            });
+            gameEnd()
+        }
+        selectedPiece = null
+        baseColorChessboard()
     } else {
         selectedPiece = null
+        baseColorChessboard()
     }
+
     renderPieces()
+}
+// returns true if there are valid moves for the player
+function simulateAllMoves() {
+    pieces.forEach(piece => {
+        // check only for the players turn
+        if (piece.color == playerTurn) {
+            piece.moves.forEach(move => {
+                if (piece.movePiece(move, true)) {
+                    return true
+                }
+            });
+        }
+    });
+    return false
+}
+
+function gameEnd() {
+    let king = whiteKing
+    let noMoves = false
+    if (playerTurn == 'b') {
+        king = blackKing
+    }
+    noMoves = simulateAllMoves()
+
+
+    if (noMoves) {
+
+        let kingCheck = false
+        pieces.forEach(piece => {
+            // check only for the enemy pieces
+            if (piece.color != playerTurn) {
+                piece.moves.forEach(move => {
+                    if (move[0] - king.cell[0] == 0 && move[1] - king.cell[1] == 0) {
+                        kingCheck = true
+                    }
+                });
+            }
+        });
+
+        if (kingCheck) {
+            // lose
+            console.log(king, 'checkmated')
+        } else {
+            // draw
+            console.log(king, 'has no moves - draw');
+        }
+    }
 }
 //-------------------------------------------------------------------
 
@@ -571,29 +685,9 @@ for (let i = 0; i < 64; i++) {
 
 }
 
-// coloring the chessBoard
-for (let i = 0; i < 64; i++) {
-    if (parseInt(i / 8) % 2 == 0) {
-        if (i % 2 == 1) {
-            docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'purple'
-        } else {
-            docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'RGB(92,191,220)'
-        }
-    } else if (i % 2 == 0) {
-        docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'purple'
-    } else {
-        docChessBoardCells[parseInt(i / 8)][i % 8].style.backgroundColor = 'RGB(92,191,220)'
-    }
-}
+baseColorChessboard()
 
 spawnStartingPieces()
-
-// calculate new moves for every piece
-pieces.forEach(piece => {
-    piece.calculateNewPieceMoves()
-});
-
-renderPieces()
 
 // add eventListeners and Id's to cells
 for (let i = 0; i < 8; i++) {
@@ -605,6 +699,14 @@ for (let i = 0; i < 8; i++) {
     });
 
 }
+
+// calculate new moves for every piece
+pieces.forEach(piece => {
+    piece.calculateNewPieceMoves()
+});
+
+renderPieces()
+
 
 
 //console.log(cellContent([0,0]));
